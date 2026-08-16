@@ -1,5 +1,7 @@
 # Dev Port Manager 🛠️
 
+> 🌐 简体中文 | [English](README.en.md)
+
 本机开发服务器端口管理工具：网页实时查看端口占用、解析进程名与 PID、一键停止进程。
 
 - 后端：Node.js + Express（`lsof` / `ss` / `netstat` 检测端口与定位 PID）
