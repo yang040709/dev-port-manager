@@ -48,6 +48,7 @@ npm test   # full API regression: boots a temporary instance, cleans up afterwar
 | Port notes | Click the note cell to edit inline (≤50 chars), persisted in `ports.json` |
 | Tool detection | Auto-tags processes: vite / webpack / next / node / npm / python / java / docker / nginx / system services |
 | Live push | With auto-refresh on, updates stream over SSE (server pushes at the chosen interval; auto fallback to polling on disconnect) |
+| Light / dark theme | One-click toggle in the top-right (🌙/☀️), follows the OS by default, persisted, no flash on reload |
 | Auto refresh | Toolbar option: off / every 3 s / 5 s / 10 s |
 | Error reporting | Clear, actionable errors instead of silent failure when a process cannot be killed (system service, insufficient permissions) |
 

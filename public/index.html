@@ -5,12 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Dev Port Manager · 端口管理</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>" />
+<script>
+/* 主题预置：避免刷新时闪烁（localStorage 优先，其次跟随系统） */
+(function () {
+  var t = 'dark';
+  try {
+    t = localStorage.getItem('dpm_theme') ||
+      (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  } catch (e) {}
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <style>
   :root {
     --bg: #0f1115; --panel: #171a21; --panel2: #1d232e; --border: #262c39;
     --text: #e6eaf2; --muted: #8b93a7;
     --green: #3ddc84; --red: #ff5c5c; --amber: #ffb020; --accent: #4c8dff;
+    --scroll-thumb: #2a3140; --scroll-thumb-hover: #3a4356;
+    --sel: rgba(76,141,255,.3);
+    /* chip 标签亮度（暗色=浅字深底） */
+    --chip-l: 68%; --chip-bg: 15%; --chip-bg-a: .32; --chip-bd-l: 55%; --chip-bd-a: .42;
   }
+  html[data-theme="light"] {
+    --bg: #f4f6f9; --panel: #ffffff; --panel2: #eef1f6; --border: #e1e6ef;
+    --text: #1b2233; --muted: #66707f;
+    --green: #16a34a; --red: #dc2626; --amber: #b45309; --accent: #2563eb;
+    --scroll-thumb: #c4cad6; --scroll-thumb-hover: #aab2c2;
+    --sel: rgba(37,99,235,.18);
+    /* chip 标签亮度（亮色=深字浅底） */
+    --chip-l: 32%; --chip-bg: 90%; --chip-bg-a: .55; --chip-bd-l: 68%; --chip-bd-a: .6;
+  }
+  html[data-theme="light"] .badge.free { background: rgba(22,163,74,.1); border-color: rgba(22,163,74,.4); }
+  html[data-theme="light"] .badge.occ { background: rgba(220,38,38,.1); border-color: rgba(220,38,38,.4); }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -103,9 +129,9 @@
   .table-scroll { overflow-x: auto; border-radius: 12px; }
   .empty-icon { font-size: 30px; display: block; margin-bottom: 8px; }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-thumb { background: #2a3140; border-radius: 5px; }
-  ::-webkit-scrollbar-thumb:hover { background: #3a4356; }
-  ::selection { background: rgba(76,141,255,.3); }
+  ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+  ::selection { background: var(--sel); }
 
   .proc-item { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .proc-item + .proc-item { margin-top: 4px; }
@@ -121,19 +147,25 @@
   .ptable td.chk { text-align: center; }
   .ptable input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
 
-  /* 开发工具识别标签 */
-  .chip { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
-  .k-vite    { color: #c4b5fd; background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.4); }
-  .k-webpack { color: #93c5fd; background: rgba(96,165,250,.12); border-color: rgba(96,165,250,.4); }
-  .k-next, .k-nuxt { color: #e5e7eb; background: rgba(156,163,175,.14); border-color: rgba(156,163,175,.4); }
-  .k-npm     { color: #fdba74; background: rgba(251,146,60,.12); border-color: rgba(251,146,60,.4); }
-  .k-node    { color: #86efac; background: rgba(74,222,128,.12); border-color: rgba(74,222,128,.4); }
-  .k-python  { color: #fde047; background: rgba(250,204,21,.12); border-color: rgba(250,204,21,.4); }
-  .k-java    { color: #fca5a5; background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.4); }
-  .k-docker  { color: #7dd3fc; background: rgba(56,189,248,.12); border-color: rgba(56,189,248,.4); }
-  .k-nginx   { color: #6ee7b7; background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.4); }
-  .k-system  { color: #cbd5e1; background: rgba(148,163,184,.12); border-color: rgba(148,163,184,.4); }
-  .k-unknown { color: #94a3b8; background: rgba(100,116,139,.1); border-color: rgba(100,116,139,.3); }
+  /* 开发工具识别标签（色相变量，亮/暗主题自动适配） */
+  .chip {
+    display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px;
+    border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
+    color: hsl(var(--h, 220) var(--s, 30%) var(--chip-l));
+    background: hsl(var(--h, 220) var(--s, 30%) var(--chip-bg) / var(--chip-bg-a));
+    border-color: hsl(var(--h, 220) var(--s, 30%) var(--chip-bd-l) / var(--chip-bd-a));
+  }
+  .k-vite    { --h: 258; --s: 84%; }
+  .k-webpack { --h: 213; --s: 88%; }
+  .k-next, .k-nuxt { --h: 220; --s: 20%; }
+  .k-npm     { --h: 25;  --s: 97%; }
+  .k-node    { --h: 140; --s: 77%; }
+  .k-python  { --h: 48;  --s: 98%; }
+  .k-java    { --h: 0;   --s: 94%; }
+  .k-docker  { --h: 199; --s: 95%; }
+  .k-nginx   { --h: 158; --s: 72%; }
+  .k-system  { --h: 214; --s: 32%; }
+  .k-unknown { --h: 215; --s: 20%; }
 
   /* 端口备注 */
   .note-cell { min-width: 132px; }
@@ -249,6 +281,7 @@ const I18N = {
     btnProcessing: '处理中…',
     copyPort: '点击复制端口号',
     liveLabel: '实时',
+    themeLight: '亮色', themeDark: '暗色', themeTitle: '切换亮色 / 暗色模式',
     toastNoteSaved: '备注已保存',
     toastNoteFail: '保存备注失败：{msg}',
     notePlaceholder: '点击添加备注', noteEdit: '点击编辑备注', noteRemove: '清除备注',
@@ -298,6 +331,7 @@ const I18N = {
     btnProcessing: 'Working…',
     copyPort: 'Click to copy the port number',
     liveLabel: 'LIVE',
+    themeLight: 'Light', themeDark: 'Dark', themeTitle: 'Toggle light / dark mode',
     toastNoteSaved: 'Note saved',
     toastNoteFail: 'Failed to save note: {msg}',
     notePlaceholder: 'click to add a note', noteEdit: 'Edit note', noteRemove: 'Clear note',
@@ -313,6 +347,13 @@ const I18N = {
 function App() {
   const [lang, setLang] = useState(() => {
     try { return localStorage.getItem('dpm_lang') === 'en' ? 'en' : 'zh'; } catch (e) { return 'zh'; }
+  });
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dpm_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    } catch (e) { return 'dark'; }
   });
   const [ports, setPorts] = useState([]);
   const [notes, setNotes] = useState({});
@@ -337,6 +378,12 @@ function App() {
     if (vars) for (const [k, v] of Object.entries(vars)) s = s.split('{' + k + '}').join(v);
     return s;
   }, [lang]);
+
+  // 主题持久化 + 应用到 <html data-theme>
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('dpm_theme', theme); } catch (e) {}
+  }, [theme]);
 
   // 语言偏好持久化 + 页面标题
   useEffect(() => {
@@ -614,6 +661,11 @@ function App() {
           <span className="stat-pill occ"><span className="dot" />{t('statOccupied')} <b>{occupied}</b></span>
           <span className="stat-pill free"><span className="dot" />{t('statFree')} <b>{free}</b></span>
         </div>
+        <button
+          className="lang-btn"
+          onClick={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))}
+          title={t('themeTitle')}
+        >{theme === 'dark' ? '☀️ ' + t('themeLight') : '🌙 ' + t('themeDark')}</button>
         <button
           className="lang-btn"
           onClick={() => setLang(l => (l === 'zh' ? 'en' : 'zh'))}
