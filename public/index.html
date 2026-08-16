@@ -59,6 +59,12 @@
   .btn.danger:hover:not(:disabled) { background: rgba(255,92,92,.1); border-color: var(--red); }
   .btn.small { padding: 3px 10px; font-size: 12px; }
   .btn.ghost { color: var(--muted); }
+  .lang-btn {
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px 14px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+  }
+  .lang-btn:hover { color: var(--text); border-color: var(--accent); background: rgba(76,141,255,.08); }
   .spin { display: inline-block; }
   .spin.on { animation: rot .8s linear infinite; }
   @keyframes rot { to { transform: rotate(360deg); } }
@@ -113,24 +119,35 @@
 <script src="/vendor/babel/babel.min.js"></script>
 
 <script>
-/* 加载失败自诊断：任何运行时脚本缺失时给出可见提示，而不是控制台里裸的 ReferenceError */
+/* 加载失败自诊断：任何运行时脚本缺失时给出可见提示，而不是控制台里裸的 ReferenceError（跟随语言偏好） */
 (function () {
   var missing = [];
   if (typeof React === 'undefined') missing.push('/vendor/react/react.development.js');
   if (typeof ReactDOM === 'undefined') missing.push('/vendor/react-dom/react-dom.development.js');
   if (typeof Babel === 'undefined') missing.push('/vendor/babel/babel.min.js');
   if (missing.length) {
+    var isEn = false;
+    try { isEn = localStorage.getItem('dpm_lang') === 'en'; } catch (e) {}
+    var L = isEn
+      ? { head: '⚠ Page assets failed to load',
+          lead: 'The following assets could not be loaded (404 / network error / stale cache): ',
+          s1: 'Open <b>http://localhost:3081</b> directly — not via a proxy or preview pane;<br/>',
+          s2: 'Hard-refresh with <b>Ctrl+F5</b> (Cmd+Shift+R on macOS) to clear the stale cache;<br/>',
+          s3: 'For a manually copied copy, re-run <b>npm install</b> in the project directory, then restart the server.' }
+      : { head: '⚠ 页面脚本加载失败',
+          lead: '以下资源未能加载（404 / 网络错误 / 缓存过期）：',
+          s1: '直接访问 <b>http://localhost:3081</b>，不要通过代理或预览窗口打开；<br/>',
+          s2: '按 <b>Ctrl+F5</b>（Mac 为 Cmd+Shift+R）强制刷新，清除旧缓存；<br/>',
+          s3: '若为手工复制的副本，在项目目录重新执行 <b>npm install</b> 重建前端资源，再重启服务。' };
+    var joiner = isEn ? ', ' : '、';
     document.getElementById('root').innerHTML =
       '<div style="max-width:540px;margin:60px auto;padding:24px;border:1px solid rgba(255,92,92,.5);' +
       'border-radius:12px;background:#171a21;color:#e6eaf2;font:14px/1.8 system-ui,-apple-system,sans-serif;">' +
-      '<b style="color:#ff5c5c;font-size:15px;">⚠ 页面脚本加载失败</b><br/>' +
-      '以下资源未能加载（404 / 网络错误 / 缓存过期）：<b>' + missing.join('、') + '</b><br/>' +
-      '请依次排查：<br/>' +
-      '① 直接访问 <b>http://localhost:3081</b>，不要通过代理或预览窗口打开；<br/>' +
-      '② 按 <b>Ctrl+F5</b>（Mac 为 Cmd+Shift+R）强制刷新，清除旧缓存；<br/>' +
-      '③ 若为手工复制的副本，在项目目录重新执行 <b>npm install</b> 重建前端资源，再重启服务。' +
+      '<b style="color:#ff5c5c;font-size:15px;">' + L.head + '</b><br/>' +
+      L.lead + '<b>' + missing.join(joiner) + '</b><br/>' +
+      L.s1 + L.s2 + L.s3 +
       '</div>';
-    if (window.console) console.error('页面资源加载失败：', missing);
+    if (window.console) console.error('page assets failed to load:', missing);
   }
 })();
 </script>
@@ -138,7 +155,80 @@
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useRef, useCallback } = React;
 
+/* ---------- i18n 词典 ---------- */
+const I18N = {
+  zh: {
+    title: 'Dev Port Manager · 端口管理',
+    langToggle: 'English',
+    subFallback: '本地开发端口管理',
+    subUpdated: '上次检测 {time}',
+    statTotal: '总端口', statOccupied: '占用中', statFree: '空闲',
+    btnRefresh: '手动刷新', btnAdd: '+ 添加端口',
+    btnStop: '停止进程', btnStopping: '终止中…', btnDelete: '删除',
+    btnDeleteTitle: '从列表移除（不影响进程）',
+    labelAuto: '自动刷新',
+    optOff: '关闭', opt3: '每 3 秒', opt5: '每 5 秒', opt10: '每 10 秒',
+    inputPlaceholder: '输入端口号，如 6001',
+    emptyChecking: '正在检测端口状态…', emptyAdd: '列表为空，请在上方输入端口号添加',
+    thPort: '端口', thStatus: '状态', thProcess: '占用进程', thAction: '操作',
+    badgeOcc: '占用', badgeFree: '空闲',
+    cmdlineTitle: '命令行: {cmd}',
+    confirmRemove: '确定从列表移除端口 {port} 吗？（仅移除监控，不影响其进程）',
+    confirmKill: '确定终止占用端口 {port} 的进程吗？\n（先尝试优雅退出 SIGTERM，必要时强制 SIGKILL）',
+    toastTimeout: '刷新失败：请求超时',
+    toastRefresh: '刷新失败：{msg}',
+    toastInvalid: '请输入有效的端口号（1–65535）',
+    toastAdded: '端口 {port} 已添加',
+    toastAddFail: '添加失败：{msg}',
+    toastRemoved: '端口 {port} 已从列表移除',
+    toastDeleteFail: '删除失败：{msg}',
+    toastReleased: '端口 {port} 已释放',
+    toastKillFail: '无法终止端口 {port} 的进程',
+    toastOpFail: '操作失败：{msg}',
+    killStill: '端口 {port} 仍被进程占用：{still}。该进程可能是系统服务或无权限终止，请以管理员/root 身份运行本工具后重试，或手动处理。',
+    selfProtect: '端口 {port} 正被本工具自身占用，已自动跳过终止',
+    footA: '提示：占用检测基于 ', footB: '，进程名与命令行来自 ', footC: '。停止进程先发 SIGTERM（优雅退出），Windows 下为强制终止；无权限终止时会给出明确错误提示。系统服务类进程（如 sshd、svchost）通常无法被普通权限终止，属正常现象。',
+    footD: '自定义端口列表保存在项目目录下的 ports.json，可手工编辑，重启后生效。',
+  },
+  en: {
+    title: 'Dev Port Manager · Port Manager',
+    langToggle: '中文',
+    subFallback: 'Local dev port manager',
+    subUpdated: 'Last checked {time}',
+    statTotal: 'Total', statOccupied: 'Occupied', statFree: 'Free',
+    btnRefresh: 'Refresh', btnAdd: '+ Add port',
+    btnStop: 'Stop process', btnStopping: 'Stopping…', btnDelete: 'Remove',
+    btnDeleteTitle: 'Remove from list (process untouched)',
+    labelAuto: 'Auto refresh',
+    optOff: 'Off', opt3: 'Every 3 s', opt5: 'Every 5 s', opt10: 'Every 10 s',
+    inputPlaceholder: 'Port number, e.g. 6001',
+    emptyChecking: 'Checking port status…', emptyAdd: 'List is empty — add a port above',
+    thPort: 'Port', thStatus: 'Status', thProcess: 'Process', thAction: 'Actions',
+    badgeOcc: 'Occupied', badgeFree: 'Free',
+    cmdlineTitle: 'Command: {cmd}',
+    confirmRemove: 'Remove port {port} from the list? (monitoring only — the process is untouched)',
+    confirmKill: 'Terminate the process holding port {port}?\n(SIGTERM first, SIGKILL escalation if needed)',
+    toastTimeout: 'Refresh failed: request timed out',
+    toastRefresh: 'Refresh failed: {msg}',
+    toastInvalid: 'Enter a valid port number (1–65535)',
+    toastAdded: 'Port {port} added',
+    toastAddFail: 'Failed to add: {msg}',
+    toastRemoved: 'Port {port} removed from the list',
+    toastDeleteFail: 'Failed to remove: {msg}',
+    toastReleased: 'Port {port} released',
+    toastKillFail: 'Could not terminate the process on port {port}',
+    toastOpFail: 'Operation failed: {msg}',
+    killStill: 'Port {port} is still held by: {still}. It may be a system service or require elevated permissions — retry as admin/root or handle manually.',
+    selfProtect: 'Port {port} is held by this tool itself — termination skipped automatically',
+    footA: 'Detection relies on ', footB: '; process names & command lines come from ', footC: '. Termination sends SIGTERM first (forced on Windows); permission failures are reported clearly. System services (e.g. sshd, svchost) usually cannot be killed by a normal user — that is expected.',
+    footD: 'Custom ports are stored in ports.json in the project directory — editable by hand, takes effect on restart.',
+  },
+};
+
 function App() {
+  const [lang, setLang] = useState(() => {
+    try { return localStorage.getItem('dpm_lang') === 'en' ? 'en' : 'zh'; } catch (e) { return 'zh'; }
+  });
   const [ports, setPorts] = useState([]);
   const [server, setServer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -151,6 +241,18 @@ function App() {
   const timerRef = useRef(null);
   const toastTimer = useRef(null);
 
+  const t = useCallback((key, vars) => {
+    let s = (I18N[lang] && I18N[lang][key]) || I18N.zh[key] || key;
+    if (vars) for (const [k, v] of Object.entries(vars)) s = s.split('{' + k + '}').join(v);
+    return s;
+  }, [lang]);
+
+  // 语言偏好持久化 + 页面标题
+  useEffect(() => {
+    try { localStorage.setItem('dpm_lang', lang); } catch (e) {}
+    document.title = t('title');
+  }, [lang, t]);
+
   const showToast = useCallback((type, text) => {
     setToast({ type, text, key: Date.now() });
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -161,22 +263,22 @@ function App() {
     if (silent) setRefreshing(true); else setLoading(true);
     try {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 10000);
+      const tm = setTimeout(() => ctrl.abort(), 10000);
       const res = await fetch('/api/ports', { signal: ctrl.signal });
-      clearTimeout(t);
+      clearTimeout(tm);
       const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error((data && data.error) || `请求失败（HTTP ${res.status}）`);
+      if (!res.ok) throw new Error((data && data.error) || 'HTTP ' + res.status);
       setPorts(data.ports || []);
       setServer(data.server || null);
       setLastUpdated(new Date());
     } catch (e) {
-      if (e.name === 'AbortError') showToast('error', '刷新失败：请求超时');
-      else showToast('error', '刷新失败：' + e.message);
+      if (e.name === 'AbortError') showToast('error', t('toastTimeout'));
+      else showToast('error', t('toastRefresh', { msg: e.message }));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   // 首次加载
   useEffect(() => { fetchPorts(); }, [fetchPorts]);
@@ -195,7 +297,7 @@ function App() {
     e.preventDefault();
     const port = Number(newPort);
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
-      showToast('error', '请输入有效的端口号（1–65535）');
+      showToast('error', t('toastInvalid'));
       return;
     }
     try {
@@ -205,42 +307,54 @@ function App() {
         body: JSON.stringify({ port }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error((data && data.error) || '添加失败');
+      if (!res.ok) throw new Error((data && data.error) || 'HTTP ' + res.status);
       setNewPort('');
-      showToast('success', `端口 ${port} 已添加`);
+      showToast('success', t('toastAdded', { port }));
       fetchPorts();
     } catch (err) {
-      showToast('error', '添加失败：' + err.message);
+      showToast('error', t('toastAddFail', { msg: err.message }));
     }
   }
 
   async function handleDelete(port) {
-    if (!window.confirm(`确定从列表移除端口 ${port} 吗？（仅移除监控，不影响其进程）`)) return;
+    if (!window.confirm(t('confirmRemove', { port }))) return;
     try {
       const res = await fetch('/api/ports/' + port, { method: 'DELETE' });
       const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error((data && data.error) || '删除失败');
-      showToast('success', `端口 ${port} 已从列表移除`);
+      if (!res.ok) throw new Error((data && data.error) || 'HTTP ' + res.status);
+      showToast('success', t('toastRemoved', { port }));
       fetchPorts();
     } catch (err) {
-      showToast('error', '删除失败：' + err.message);
+      showToast('error', t('toastDeleteFail', { msg: err.message }));
     }
   }
 
   async function handleKill(port) {
-    if (!window.confirm(`确定终止占用端口 ${port} 的进程吗？\n（先尝试优雅退出 SIGTERM，必要时强制 SIGKILL）`)) return;
+    if (!window.confirm(t('confirmKill', { port }))) return;
     setBusyPort(port);
     try {
       const res = await fetch('/api/kill/' + port, { method: 'POST' });
       const data = await res.json().catch(() => null);
       if (res.ok) {
-        showToast('success', (data && data.message) || `端口 ${port} 已释放`);
+        showToast('success', t('toastReleased', { port }));
       } else {
-        showToast('error', (data && data.error) || `无法终止端口 ${port} 的进程`);
+        const errText = (data && data.error) || t('toastKillFail', { port });
+        if (lang === 'en') {
+          if (data && data.still && data.still.length) {
+            const still = data.still.map(p => `${p.name}(${p.pid})`).join(', ');
+            showToast('error', t('killStill', { port, still }));
+          } else if (errText.indexOf('本工具自身') !== -1) {
+            showToast('error', t('selfProtect', { port }));
+          } else {
+            showToast('error', t('toastKillFail', { port }) + ' — ' + errText);
+          }
+        } else {
+          showToast('error', errText);
+        }
       }
       fetchPorts();
     } catch (err) {
-      showToast('error', '操作失败：' + err.message);
+      showToast('error', t('toastOpFail', { msg: err.message }));
     } finally {
       setBusyPort(null);
     }
@@ -259,50 +373,55 @@ function App() {
             <p className="sub">
               {server
                 ? <span className="mono">localhost:{server.port} · PID {server.pid}</span>
-                : '本地开发端口管理'}
-              {lastUpdated && <span className="updated">上次检测 {lastUpdated.toLocaleTimeString()}</span>}
+                : t('subFallback')}
+              {lastUpdated && <span className="updated">{t('subUpdated', { time: lastUpdated.toLocaleTimeString() })}</span>}
             </p>
           </div>
         </div>
         <div className="stats">
-          <div className="stat"><b>{ports.length}</b><span>总端口</span></div>
-          <div className="stat occ"><b>{occupied}</b><span>占用中</span></div>
-          <div className="stat free"><b>{free}</b><span>空闲</span></div>
+          <div className="stat"><b>{ports.length}</b><span>{t('statTotal')}</span></div>
+          <div className="stat occ"><b>{occupied}</b><span>{t('statOccupied')}</span></div>
+          <div className="stat free"><b>{free}</b><span>{t('statFree')}</span></div>
         </div>
+        <button
+          className="lang-btn"
+          onClick={() => setLang(l => (l === 'zh' ? 'en' : 'zh'))}
+          title={lang === 'zh' ? 'Switch to English' : '切换到中文'}
+        >{t('langToggle')}</button>
       </header>
 
       <section className="toolbar">
         <button className="btn" onClick={() => fetchPorts()} disabled={loading || refreshing}>
-          <span className={'spin ' + (refreshing ? 'on' : '')}>⟳</span> 手动刷新
+          <span className={'spin ' + (refreshing ? 'on' : '')}>⟳</span> {t('btnRefresh')}
         </button>
-        <label className="select-label">自动刷新
+        <label className="select-label">{t('labelAuto')}
           <select value={auto} onChange={e => setAuto(e.target.value)}>
-            <option value="0">关闭</option>
-            <option value="3">每 3 秒</option>
-            <option value="5">每 5 秒</option>
-            <option value="10">每 10 秒</option>
+            <option value="0">{t('optOff')}</option>
+            <option value="3">{t('opt3')}</option>
+            <option value="5">{t('opt5')}</option>
+            <option value="10">{t('opt10')}</option>
           </select>
         </label>
         <form className="add" onSubmit={handleAdd}>
           <input
             value={newPort}
             onChange={e => setNewPort(e.target.value.replace(/\D/g, '').slice(0, 5))}
-            placeholder="输入端口号，如 6001"
+            placeholder={t('inputPlaceholder')}
             inputMode="numeric"
           />
-          <button className="btn primary" type="submit" disabled={!newPort}>+ 添加端口</button>
+          <button className="btn primary" type="submit" disabled={!newPort}>{t('btnAdd')}</button>
         </form>
       </section>
 
       {loading && ports.length === 0 ? (
-        <div className="empty">正在检测端口状态…</div>
+        <div className="empty">{t('emptyChecking')}</div>
       ) : ports.length === 0 ? (
-        <div className="empty">列表为空，请在上方输入端口号添加</div>
+        <div className="empty">{t('emptyAdd')}</div>
       ) : (
         <table className="ptable">
           <thead>
             <tr>
-              <th>端口</th><th>状态</th><th>占用进程</th><th>操作</th>
+              <th>{t('thPort')}</th><th>{t('thStatus')}</th><th>{t('thProcess')}</th><th>{t('thAction')}</th>
             </tr>
           </thead>
           <tbody>
@@ -311,14 +430,14 @@ function App() {
                 <td className="port mono">{p.port}</td>
                 <td>
                   {p.occupied
-                    ? <span className="badge occ">占用</span>
-                    : <span className="badge free">空闲</span>}
+                    ? <span className="badge occ">{t('badgeOcc')}</span>
+                    : <span className="badge free">{t('badgeFree')}</span>}
                 </td>
                 <td className="proc">
                   {p.occupied && p.pids.length ? (
                     p.pids.map(pr => (
                       <div className="proc-item" key={pr.pid}
-                           title={pr.cmdline ? '命令行: ' + pr.cmdline : undefined}>
+                           title={pr.cmdline ? t('cmdlineTitle', { cmd: pr.cmdline }) : undefined}>
                         <span className="mono">{pr.name}</span>
                         <span className="pid mono">PID {pr.pid}</span>
                         {pr.cmdline && <span className="cmdline mono">{pr.cmdline}</span>}
@@ -331,12 +450,12 @@ function App() {
                     className="btn small danger"
                     disabled={!p.occupied || busyPort === p.port}
                     onClick={() => handleKill(p.port)}
-                  >{busyPort === p.port ? '终止中…' : '停止进程'}</button>
+                  >{busyPort === p.port ? t('btnStopping') : t('btnStop')}</button>
                   <button
                     className="btn small ghost"
                     onClick={() => handleDelete(p.port)}
-                    title="从列表移除（不影响进程）"
-                  >删除</button>
+                    title={t('btnDeleteTitle')}
+                  >{t('btnDelete')}</button>
                 </td>
               </tr>
             ))}
@@ -345,10 +464,9 @@ function App() {
       )}
 
       <footer className="foot">
-        提示：占用检测基于 <span className="mono">lsof / ss / netstat</span>，进程名与命令行来自 <span className="mono">ps / tasklist</span>。
-        停止进程先发 SIGTERM（优雅退出），Windows 下为强制终止；无权限终止时会给出明确错误提示。
-        系统服务类进程（如 sshd、svchost）通常无法被普通权限终止，属正常现象。<br/>
-        <em>自定义端口列表保存在项目目录下的 ports.json，可手工编辑，重启后生效。</em>
+        {t('footA')}<span className="mono">lsof / ss / netstat</span>{t('footB')}
+        <span className="mono">ps / tasklist</span>{t('footC')}<br/>
+        <em>{t('footD')}</em>
       </footer>
 
       {toast && (

@@ -10,6 +10,10 @@ A local development server port manager: watch port usage in real time from a we
 
 > License: [MIT](./LICENSE)
 
+![Screenshot](screenshot.png)
+
+*Screenshot: live port status, occupied processes & PIDs, stop process, add port and auto-refresh; language toggle in the top-right corner.*
+
 ## Quick Start
 
 Prerequisite: **Node.js ≥ 16** (React 18 UMD builds are pinned in dependencies — no bundler or build tooling required).
