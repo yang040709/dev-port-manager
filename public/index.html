@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dev Port Manager · 端口管理</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>" />
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1d232e; --border: #262c39;
+    --text: #e6eaf2; --muted: #8b93a7;
+    --green: #3ddc84; --red: #ff5c5c; --amber: #ffb020; --accent: #4c8dff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  /* 顶栏 */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 30px; }
+  .brand h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
+  .sub { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+  .sub .updated { margin-left: 10px; }
+
+  .stats { display: flex; gap: 10px; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 6px 14px; text-align: center; min-width: 74px; }
+  .stat b { display: block; font-size: 18px; }
+  .stat span { font-size: 11px; color: var(--muted); }
+  .stat.occ b { color: var(--red); }
+  .stat.free b { color: var(--green); }
+
+  /* 工具栏 */
+  .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
+  .select-label { color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+  select, .add input {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; font-size: 13px; outline: none;
+  }
+  select:focus, .add input:focus { border-color: var(--accent); }
+  .add { display: flex; gap: 8px; margin-left: auto; }
+  .add input { width: 150px; }
+
+  .btn {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer;
+    transition: filter .15s, border-color .15s;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.danger { border-color: rgba(255,92,92,.55); color: var(--red); }
+  .btn.danger:hover:not(:disabled) { background: rgba(255,92,92,.1); border-color: var(--red); }
+  .btn.small { padding: 3px 10px; font-size: 12px; }
+  .btn.ghost { color: var(--muted); }
+  .spin { display: inline-block; }
+  .spin.on { animation: rot .8s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* 表格 */
+  .ptable { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .ptable th {
+    text-align: left; font-size: 12px; color: var(--muted); font-weight: 600;
+    padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--panel2);
+  }
+  .ptable td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .ptable tr:last-child td { border-bottom: none; }
+  .ptable tr:hover td { background: rgba(76,141,255,.04); }
+  .port { font-size: 18px; font-weight: 700; color: var(--accent); }
+
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .badge.free { background: rgba(61,220,132,.12); color: var(--green); border: 1px solid rgba(61,220,132,.4); }
+  .badge.occ { background: rgba(255,92,92,.12); color: var(--red); border: 1px solid rgba(255,92,92,.4); }
+
+  .proc-item { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .proc-item + .proc-item { margin-top: 4px; }
+  .proc-item .mono { font-size: 13px; font-weight: 600; }
+  .pid { color: var(--amber); font-size: 12px; background: rgba(255,176,32,.1); padding: 1px 6px; border-radius: 6px; }
+  .cmdline { color: var(--muted); font-size: 11px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .muted { color: var(--muted); }
+  .ops { white-space: nowrap; }
+  .ops .btn { margin-right: 6px; }
+
+  .empty { background: var(--panel); border: 1px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; color: var(--muted); }
+
+  .foot { margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+  .foot em { color: var(--text); font-style: normal; }
+
+  /* toast */
+  .toast {
+    position: fixed; right: 20px; bottom: 20px; max-width: 420px;
+    padding: 12px 16px; border-radius: 10px; font-size: 13px;
+    background: var(--panel); border: 1px solid var(--border);
+    box-shadow: 0 8px 30px rgba(0,0,0,.45); z-index: 99;
+    animation: slideIn .25s ease;
+  }
+  .toast.success { border-left: 4px solid var(--green); }
+  .toast.error { border-left: 4px solid var(--red); }
+  @keyframes slideIn { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="/vendor/react/react.development.js"></script>
+<script src="/vendor/react-dom/react-dom.development.js"></script>
+<script src="/vendor/babel/babel.min.js"></script>
+
+<script>
+/* 加载失败自诊断：任何运行时脚本缺失时给出可见提示，而不是控制台里裸的 ReferenceError */
+(function () {
+  var missing = [];
+  if (typeof React === 'undefined') missing.push('/vendor/react/react.development.js');
+  if (typeof ReactDOM === 'undefined') missing.push('/vendor/react-dom/react-dom.development.js');
+  if (typeof Babel === 'undefined') missing.push('/vendor/babel/babel.min.js');
+  if (missing.length) {
+    document.getElementById('root').innerHTML =
+      '<div style="max-width:540px;margin:60px auto;padding:24px;border:1px solid rgba(255,92,92,.5);' +
+      'border-radius:12px;background:#171a21;color:#e6eaf2;font:14px/1.8 system-ui,-apple-system,sans-serif;">' +
+      '<b style="color:#ff5c5c;font-size:15px;">⚠ 页面脚本加载失败</b><br/>' +
+      '以下资源未能加载（404 / 网络错误 / 缓存过期）：<b>' + missing.join('、') + '</b><br/>' +
+      '请依次排查：<br/>' +
+      '① 直接访问 <b>http://localhost:3081</b>，不要通过代理或预览窗口打开；<br/>' +
+      '② 按 <b>Ctrl+F5</b>（Mac 为 Cmd+Shift+R）强制刷新，清除旧缓存；<br/>' +
+      '③ 若为手工复制的副本，在项目目录重新执行 <b>npm install</b> 重建前端资源，再重启服务。' +
+      '</div>';
+    if (window.console) console.error('页面资源加载失败：', missing);
+  }
+})();
+</script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback } = React;
+
+function App() {
+  const [ports, setPorts] = useState([]);
+  const [server, setServer] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [auto, setAuto] = useState('0');           // 自动刷新间隔（秒），'0' = 关闭
+  const [newPort, setNewPort] = useState('');
+  const [busyPort, setBusyPort] = useState(null);  // 正在终止的端口
+  const [toast, setToast] = useState(null);
+  const timerRef = useRef(null);
+  const toastTimer = useRef(null);
+
+  const showToast = useCallback((type, text) => {
+    setToast({ type, text, key: Date.now() });
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), type === 'error' ? 9000 : 5000);
+  }, []);
+
+  const fetchPorts = useCallback(async ({ silent = false } = {}) => {
+    if (silent) setRefreshing(true); else setLoading(true);
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 10000);
+      const res = await fetch('/api/ports', { signal: ctrl.signal });
+      clearTimeout(t);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error((data && data.error) || `请求失败（HTTP ${res.status}）`);
+      setPorts(data.ports || []);
+      setServer(data.server || null);
+      setLastUpdated(new Date());
+    } catch (e) {
+      if (e.name === 'AbortError') showToast('error', '刷新失败：请求超时');
+      else showToast('error', '刷新失败：' + e.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [showToast]);
+
+  // 首次加载
+  useEffect(() => { fetchPorts(); }, [fetchPorts]);
+
+  // 定时自动刷新
+  useEffect(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    const secs = Number(auto);
+    if (secs > 0) {
+      timerRef.current = setInterval(() => fetchPorts({ silent: true }), secs * 1000);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [auto, fetchPorts]);
+
+  async function handleAdd(e) {
+    e.preventDefault();
+    const port = Number(newPort);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      showToast('error', '请输入有效的端口号（1–65535）');
+      return;
+    }
+    try {
+      const res = await fetch('/api/ports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ port }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error((data && data.error) || '添加失败');
+      setNewPort('');
+      showToast('success', `端口 ${port} 已添加`);
+      fetchPorts();
+    } catch (err) {
+      showToast('error', '添加失败：' + err.message);
+    }
+  }
+
+  async function handleDelete(port) {
+    if (!window.confirm(`确定从列表移除端口 ${port} 吗？（仅移除监控，不影响其进程）`)) return;
+    try {
+      const res = await fetch('/api/ports/' + port, { method: 'DELETE' });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error((data && data.error) || '删除失败');
+      showToast('success', `端口 ${port} 已从列表移除`);
+      fetchPorts();
+    } catch (err) {
+      showToast('error', '删除失败：' + err.message);
+    }
+  }
+
+  async function handleKill(port) {
+    if (!window.confirm(`确定终止占用端口 ${port} 的进程吗？\n（先尝试优雅退出 SIGTERM，必要时强制 SIGKILL）`)) return;
+    setBusyPort(port);
+    try {
+      const res = await fetch('/api/kill/' + port, { method: 'POST' });
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        showToast('success', (data && data.message) || `端口 ${port} 已释放`);
+      } else {
+        showToast('error', (data && data.error) || `无法终止端口 ${port} 的进程`);
+      }
+      fetchPorts();
+    } catch (err) {
+      showToast('error', '操作失败：' + err.message);
+    } finally {
+      setBusyPort(null);
+    }
+  }
+
+  const occupied = ports.filter(p => p.occupied).length;
+  const free = ports.length - occupied;
+
+  return (
+    <div className="wrap">
+      <header className="top">
+        <div className="brand">
+          <span className="logo">🛠️</span>
+          <div>
+            <h1>Dev Port Manager</h1>
+            <p className="sub">
+              {server
+                ? <span className="mono">localhost:{server.port} · PID {server.pid}</span>
+                : '本地开发端口管理'}
+              {lastUpdated && <span className="updated">上次检测 {lastUpdated.toLocaleTimeString()}</span>}
+            </p>
+          </div>
+        </div>
+        <div className="stats">
+          <div className="stat"><b>{ports.length}</b><span>总端口</span></div>
+          <div className="stat occ"><b>{occupied}</b><span>占用中</span></div>
+          <div className="stat free"><b>{free}</b><span>空闲</span></div>
+        </div>
+      </header>
+
+      <section className="toolbar">
+        <button className="btn" onClick={() => fetchPorts()} disabled={loading || refreshing}>
+          <span className={'spin ' + (refreshing ? 'on' : '')}>⟳</span> 手动刷新
+        </button>
+        <label className="select-label">自动刷新
+          <select value={auto} onChange={e => setAuto(e.target.value)}>
+            <option value="0">关闭</option>
+            <option value="3">每 3 秒</option>
+            <option value="5">每 5 秒</option>
+            <option value="10">每 10 秒</option>
+          </select>
+        </label>
+        <form className="add" onSubmit={handleAdd}>
+          <input
+            value={newPort}
+            onChange={e => setNewPort(e.target.value.replace(/\D/g, '').slice(0, 5))}
+            placeholder="输入端口号，如 6001"
+            inputMode="numeric"
+          />
+          <button className="btn primary" type="submit" disabled={!newPort}>+ 添加端口</button>
+        </form>
+      </section>
+
+      {loading && ports.length === 0 ? (
+        <div className="empty">正在检测端口状态…</div>
+      ) : ports.length === 0 ? (
+        <div className="empty">列表为空，请在上方输入端口号添加</div>
+      ) : (
+        <table className="ptable">
+          <thead>
+            <tr>
+              <th>端口</th><th>状态</th><th>占用进程</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ports.map(p => (
+              <tr key={p.port}>
+                <td className="port mono">{p.port}</td>
+                <td>
+                  {p.occupied
+                    ? <span className="badge occ">占用</span>
+                    : <span className="badge free">空闲</span>}
+                </td>
+                <td className="proc">
+                  {p.occupied && p.pids.length ? (
+                    p.pids.map(pr => (
+                      <div className="proc-item" key={pr.pid}
+                           title={pr.cmdline ? '命令行: ' + pr.cmdline : undefined}>
+                        <span className="mono">{pr.name}</span>
+                        <span className="pid mono">PID {pr.pid}</span>
+                        {pr.cmdline && <span className="cmdline mono">{pr.cmdline}</span>}
+                      </div>
+                    ))
+                  ) : <span className="muted">—</span>}
+                </td>
+                <td className="ops">
+                  <button
+                    className="btn small danger"
+                    disabled={!p.occupied || busyPort === p.port}
+                    onClick={() => handleKill(p.port)}
+                  >{busyPort === p.port ? '终止中…' : '停止进程'}</button>
+                  <button
+                    className="btn small ghost"
+                    onClick={() => handleDelete(p.port)}
+                    title="从列表移除（不影响进程）"
+                  >删除</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <footer className="foot">
+        提示：占用检测基于 <span className="mono">lsof / ss / netstat</span>，进程名与命令行来自 <span className="mono">ps / tasklist</span>。
+        停止进程先发 SIGTERM（优雅退出），Windows 下为强制终止；无权限终止时会给出明确错误提示。
+        系统服务类进程（如 sshd、svchost）通常无法被普通权限终止，属正常现象。<br/>
+        <em>自定义端口列表保存在项目目录下的 ports.json，可手工编辑，重启后生效。</em>
+      </footer>
+
+      {toast && (
+        <div className={'toast ' + toast.type} key={toast.key}>
+          {toast.type === 'error' ? '⚠ ' : '✓ '}{toast.text}
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

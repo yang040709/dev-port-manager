@@ -1,0 +1,17 @@
+# 依赖与生成产物
+node_modules/
+public/vendor/
+
+# 本地运行状态（首次启动自动重建，含默认端口）
+ports.json
+
+# 日志
+*.log
+npm-debug.log*
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

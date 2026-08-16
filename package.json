@@ -1,0 +1,20 @@
+{
+  "name": "dev-port-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "本地开发服务器端口管理工具：检测端口占用、定位进程、一键停止，支持自定义端口与自动刷新",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "postinstall": "node scripts/vendor-assets.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "@babel/standalone": "^7.26.4",
+    "express": "^4.21.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}
