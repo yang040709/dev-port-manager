@@ -40,7 +40,7 @@ npm test   # full API regression: boots a temporary instance, cleans up afterwar
 
 | Feature | Description |
 | --- | --- |
-| Pre-configured ports | `5173, 3000, 5174, 8080, 3001` — written to `ports.json` on first run |
+| Pre-configured ports | 10 common dev ports: `3000, 3001, 3002, 4200, 5000, 5173, 5174, 5175, 8000, 8080` — written to `ports.json` on first run (existing files are back-filled once; ports you delete afterwards are never re-added) |
 | Add / remove ports | Type a port in the top bar to add it; the "Delete" button on each row removes it from monitoring (running processes are never touched) |
 | Status detection | Live detection on every refresh: Free (green) / Occupied (red); when occupied, shows the process name + PID + command line |
 | Stop process | Kills the **whole process tree** (Unix SIGTERM → SIGKILL; Windows `taskkill /T`) |

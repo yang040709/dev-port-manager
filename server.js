@@ -25,7 +25,9 @@ const { scanPorts, killPort } = require('./lib/portscan');
 
 const HOST = process.env.HOST || '127.0.0.1';
 const SERVER_PORT = Number(process.env.SERVER_PORT || 3081);
-const DEFAULT_PORTS = [5173, 3000, 5174, 8080, 3001];
+// 常用开发端口（vite×3 / node×3 / angular / flask / django / 通用 http）
+const DEFAULT_PORTS = [5173, 3000, 5174, 8080, 3001, 5175, 3002, 4200, 5000, 8000];
+const PORT_LIST_VERSION = 2;
 const PORTS_FILE = path.join(__dirname, 'ports.json');
 const SSE_TICK_MIN = 1000;
 const SSE_TICK_MAX = 30000;
@@ -33,7 +35,11 @@ const SSE_TICK_MAX = 30000;
 /* ---------- 端口列表 + 备注持久化（简单 JSON 文件） ---------- */
 
 function saveState(state) {
-  fs.writeFileSync(PORTS_FILE, JSON.stringify({ ports: state.ports, notes: state.notes || {} }, null, 2) + '\n');
+  fs.writeFileSync(PORTS_FILE, JSON.stringify({
+    version: state.version || PORT_LIST_VERSION,
+    ports: state.ports,
+    notes: state.notes || {},
+  }, null, 2) + '\n');
 }
 
 function loadState() {
@@ -41,13 +47,22 @@ function loadState() {
     const raw = JSON.parse(fs.readFileSync(PORTS_FILE, 'utf8'));
     if (Array.isArray(raw.ports) && raw.ports.every((p) => Number.isInteger(p) && p >= 1 && p <= 65535)) {
       const notes = raw.notes && typeof raw.notes === 'object' ? raw.notes : {};
-      return {
-        ports: [...new Set(raw.ports)].sort((a, b) => a - b),
-        notes,
-      };
+      const ports = [...new Set(raw.ports)].sort((a, b) => a - b);
+      // 一次性迁移：默认端口扩充（如 v1.1 从 5 个扩到 10 个）时补入新默认端口，
+      // 迁移后用户自行删除的默认端口不会再被加回
+      let migrated = false;
+      if (!raw.version || raw.version < PORT_LIST_VERSION) {
+        for (const p of DEFAULT_PORTS) {
+          if (!ports.includes(p)) { ports.push(p); migrated = true; }
+        }
+        if (migrated) ports.sort((a, b) => a - b);
+      }
+      const state = { version: PORT_LIST_VERSION, ports, notes };
+      if (migrated) saveState(state);
+      return state;
     }
   } catch { /* 文件不存在或损坏 → 使用默认端口并重新生成 */ }
-  const state = { ports: [...DEFAULT_PORTS].sort((a, b) => a - b), notes: {} };
+  const state = { version: PORT_LIST_VERSION, ports: [...DEFAULT_PORTS].sort((a, b) => a - b), notes: {} };
   saveState(state);
   return state;
 }
