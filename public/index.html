@@ -91,7 +91,6 @@
     70% { box-shadow: 0 0 0 5px rgba(255,92,92,0); }
     100% { box-shadow: 0 0 0 0 rgba(255,92,92,0); }
   }
-  .ptable tr.row-occ td { box-shadow: inset 2px 0 0 rgba(255,92,92,.4); }
   .port { cursor: pointer; }
   .port:hover { text-decoration: underline dotted; }
   .live { color: var(--green); font-size: 11px; margin-left: 8px; display: inline-flex; align-items: center; gap: 5px; }
@@ -670,7 +669,7 @@ function App() {
           </thead>
           <tbody>
             {ports.map(p => (
-              <tr key={p.port} className={p.occupied ? 'row-occ' : ''}>
+              <tr key={p.port}>
                 <td className="chk">
                   <input type="checkbox" disabled={!p.occupied} checked={selected.has(p.port)} onChange={() => toggleSel(p.port)} />
                 </td>
