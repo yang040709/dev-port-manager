@@ -6,6 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "test": "node scripts/smoke.js",
     "postinstall": "node scripts/vendor-assets.js"
   },
   "engines": {

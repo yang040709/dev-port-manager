@@ -93,6 +93,36 @@
   .ops { white-space: nowrap; }
   .ops .btn { margin-right: 6px; }
 
+  /* 复选框列 */
+  .ptable th.chk, .ptable td.chk { width: 34px; padding-left: 10px; padding-right: 2px; }
+  .ptable td.chk { text-align: center; }
+  .ptable input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+
+  /* 开发工具识别标签 */
+  .chip { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid transparent; }
+  .k-vite    { color: #c4b5fd; background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.4); }
+  .k-webpack { color: #93c5fd; background: rgba(96,165,250,.12); border-color: rgba(96,165,250,.4); }
+  .k-next, .k-nuxt { color: #e5e7eb; background: rgba(156,163,175,.14); border-color: rgba(156,163,175,.4); }
+  .k-npm     { color: #fdba74; background: rgba(251,146,60,.12); border-color: rgba(251,146,60,.4); }
+  .k-node    { color: #86efac; background: rgba(74,222,128,.12); border-color: rgba(74,222,128,.4); }
+  .k-python  { color: #fde047; background: rgba(250,204,21,.12); border-color: rgba(250,204,21,.4); }
+  .k-java    { color: #fca5a5; background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.4); }
+  .k-docker  { color: #7dd3fc; background: rgba(56,189,248,.12); border-color: rgba(56,189,248,.4); }
+  .k-nginx   { color: #6ee7b7; background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.4); }
+  .k-system  { color: #cbd5e1; background: rgba(148,163,184,.12); border-color: rgba(148,163,184,.4); }
+  .k-unknown { color: #94a3b8; background: rgba(100,116,139,.1); border-color: rgba(100,116,139,.3); }
+
+  /* 端口备注 */
+  .note-cell { min-width: 132px; }
+  .note { cursor: pointer; display: inline-flex; align-items: center; gap: 4px; max-width: 170px; }
+  .note-text { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .note-empty { color: var(--muted); font-size: 12px; opacity: .7; }
+  .note-clear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 11px; padding: 0 2px; line-height: 1; }
+  .note-clear:hover { color: var(--red); }
+  .note-input { width: 140px; background: var(--panel2); color: var(--text); border: 1px solid var(--accent); border-radius: 6px; padding: 3px 8px; font-size: 12px; outline: none; }
+
+  .sse-fallback { color: var(--amber); font-size: 11px; margin-left: 8px; }
+
   .empty { background: var(--panel); border: 1px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; color: var(--muted); }
 
   .foot { margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.8; }
@@ -166,15 +196,20 @@ const I18N = {
     btnRefresh: '手动刷新', btnAdd: '+ 添加端口',
     btnStop: '停止进程', btnStopping: '终止中…', btnDelete: '删除',
     btnDeleteTitle: '从列表移除（不影响进程）',
+    btnStopSel: '停止选中 {n}', btnStopAll: '全部停止',
+    btnStopTitle: '终止该进程及其全部子进程',
     labelAuto: '自动刷新',
     optOff: '关闭', opt3: '每 3 秒', opt5: '每 5 秒', opt10: '每 10 秒',
     inputPlaceholder: '输入端口号，如 6001',
     emptyChecking: '正在检测端口状态…', emptyAdd: '列表为空，请在上方输入端口号添加',
-    thPort: '端口', thStatus: '状态', thProcess: '占用进程', thAction: '操作',
+    thPort: '端口', thStatus: '状态', thProcess: '占用进程', thNote: '备注', thAction: '操作',
+    chkAllTitle: '全选/取消占用中的端口',
     badgeOcc: '占用', badgeFree: '空闲',
     cmdlineTitle: '命令行: {cmd}',
     confirmRemove: '确定从列表移除端口 {port} 吗？（仅移除监控，不影响其进程）',
-    confirmKill: '确定终止占用端口 {port} 的进程吗？\n（先尝试优雅退出 SIGTERM，必要时强制 SIGKILL）',
+    confirmKill: '确定终止占用端口 {port} 的进程及其子进程吗？\n（先尝试优雅退出 SIGTERM，必要时强制 SIGKILL）',
+    stopSelConfirm: '确定停止选中的 {n} 个端口的进程及其子进程吗？',
+    stopAllConfirm: '确定停止全部 {n} 个占用中的进程及其子进程吗？',
     toastTimeout: '刷新失败：请求超时',
     toastRefresh: '刷新失败：{msg}',
     toastInvalid: '请输入有效的端口号（1–65535）',
@@ -183,12 +218,19 @@ const I18N = {
     toastRemoved: '端口 {port} 已从列表移除',
     toastDeleteFail: '删除失败：{msg}',
     toastReleased: '端口 {port} 已释放',
+    toastStopped: '已停止 {n} 个进程',
+    toastStopPart: '已停止 {n} 个，{f} 个失败',
     toastKillFail: '无法终止端口 {port} 的进程',
     toastOpFail: '操作失败：{msg}',
+    toastNoteSaved: '备注已保存',
+    toastNoteFail: '保存备注失败：{msg}',
+    notePlaceholder: '点击添加备注', noteEdit: '点击编辑备注', noteRemove: '清除备注',
     killStill: '端口 {port} 仍被进程占用：{still}。该进程可能是系统服务或无权限终止，请以管理员/root 身份运行本工具后重试，或手动处理。',
     selfProtect: '端口 {port} 正被本工具自身占用，已自动跳过终止',
-    footA: '提示：占用检测基于 ', footB: '，进程名与命令行来自 ', footC: '。停止进程先发 SIGTERM（优雅退出），Windows 下为强制终止；无权限终止时会给出明确错误提示。系统服务类进程（如 sshd、svchost）通常无法被普通权限终止，属正常现象。',
-    footD: '自定义端口列表保存在项目目录下的 ports.json，可手工编辑，重启后生效。',
+    labelKindSystem: '系统服务', labelKindUnknown: '未知',
+    sseFallback: '实时推送断开，已降级为轮询',
+    footA: '提示：占用检测基于 ', footB: '，进程名与命令行来自 ', footC: '。停止进程会连同其子进程一起终止（Windows 用 taskkill /T）。系统服务类进程（如 sshd、svchost）通常无法被普通权限终止，属正常现象。',
+    footD: '自定义端口列表与备注保存在项目目录下的 ports.json，可手工编辑，重启后生效。',
   },
   en: {
     title: 'Dev Port Manager · Port Manager',
@@ -199,15 +241,20 @@ const I18N = {
     btnRefresh: 'Refresh', btnAdd: '+ Add port',
     btnStop: 'Stop process', btnStopping: 'Stopping…', btnDelete: 'Remove',
     btnDeleteTitle: 'Remove from list (process untouched)',
+    btnStopSel: 'Stop selected ({n})', btnStopAll: 'Stop all',
+    btnStopTitle: 'Terminate the process and all its children',
     labelAuto: 'Auto refresh',
     optOff: 'Off', opt3: 'Every 3 s', opt5: 'Every 5 s', opt10: 'Every 10 s',
     inputPlaceholder: 'Port number, e.g. 6001',
     emptyChecking: 'Checking port status…', emptyAdd: 'List is empty — add a port above',
-    thPort: 'Port', thStatus: 'Status', thProcess: 'Process', thAction: 'Actions',
+    thPort: 'Port', thStatus: 'Status', thProcess: 'Process', thNote: 'Note', thAction: 'Actions',
+    chkAllTitle: 'Select / deselect occupied ports',
     badgeOcc: 'Occupied', badgeFree: 'Free',
     cmdlineTitle: 'Command: {cmd}',
     confirmRemove: 'Remove port {port} from the list? (monitoring only — the process is untouched)',
-    confirmKill: 'Terminate the process holding port {port}?\n(SIGTERM first, SIGKILL escalation if needed)',
+    confirmKill: 'Terminate the process holding port {port} and all its children?\n(SIGTERM first, SIGKILL escalation if needed)',
+    stopSelConfirm: 'Stop the {n} selected processes and their children?',
+    stopAllConfirm: 'Stop all {n} occupied processes and their children?',
     toastTimeout: 'Refresh failed: request timed out',
     toastRefresh: 'Refresh failed: {msg}',
     toastInvalid: 'Enter a valid port number (1–65535)',
@@ -216,12 +263,19 @@ const I18N = {
     toastRemoved: 'Port {port} removed from the list',
     toastDeleteFail: 'Failed to remove: {msg}',
     toastReleased: 'Port {port} released',
+    toastStopped: 'Stopped {n} process(es)',
+    toastStopPart: 'Stopped {n}, {f} failed',
     toastKillFail: 'Could not terminate the process on port {port}',
     toastOpFail: 'Operation failed: {msg}',
+    toastNoteSaved: 'Note saved',
+    toastNoteFail: 'Failed to save note: {msg}',
+    notePlaceholder: 'click to add a note', noteEdit: 'Edit note', noteRemove: 'Clear note',
     killStill: 'Port {port} is still held by: {still}. It may be a system service or require elevated permissions — retry as admin/root or handle manually.',
     selfProtect: 'Port {port} is held by this tool itself — termination skipped automatically',
-    footA: 'Detection relies on ', footB: '; process names & command lines come from ', footC: '. Termination sends SIGTERM first (forced on Windows); permission failures are reported clearly. System services (e.g. sshd, svchost) usually cannot be killed by a normal user — that is expected.',
-    footD: 'Custom ports are stored in ports.json in the project directory — editable by hand, takes effect on restart.',
+    labelKindSystem: 'system', labelKindUnknown: 'unknown',
+    sseFallback: 'Live feed disconnected — fell back to polling',
+    footA: 'Detection relies on ', footB: '; process names & command lines come from ', footC: '. Termination kills the whole process tree (taskkill /T on Windows). System services (e.g. sshd, svchost) usually cannot be killed by a normal user — that is expected.',
+    footD: 'Custom ports and notes are stored in ports.json in the project directory — editable by hand, takes effect on restart.',
   },
 };
 
@@ -230,13 +284,19 @@ function App() {
     try { return localStorage.getItem('dpm_lang') === 'en' ? 'en' : 'zh'; } catch (e) { return 'zh'; }
   });
   const [ports, setPorts] = useState([]);
+  const [notes, setNotes] = useState({});
   const [server, setServer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [auto, setAuto] = useState('0');           // 自动刷新间隔（秒），'0' = 关闭
+  const [auto, setAuto] = useState('0');           // 实时刷新间隔（秒），'0' = 关闭
   const [newPort, setNewPort] = useState('');
-  const [busyPort, setBusyPort] = useState(null);  // 正在终止的端口
+  const [busyPort, setBusyPort] = useState(null);  // 正在终止的端口（单行）
+  const [busyAll, setBusyAll] = useState(false);   // 正在批量终止
+  const [selected, setSelected] = useState(() => new Set());
+  const [editingPort, setEditingPort] = useState(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [sseDown, setSseDown] = useState(false);   // SSE 断开标记（降级轮询）
   const [toast, setToast] = useState(null);
   const timerRef = useRef(null);
   const toastTimer = useRef(null);
@@ -269,6 +329,7 @@ function App() {
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error((data && data.error) || 'HTTP ' + res.status);
       setPorts(data.ports || []);
+      setNotes(data.notes || {});
       setServer(data.server || null);
       setLastUpdated(new Date());
     } catch (e) {
@@ -283,15 +344,43 @@ function App() {
   // 首次加载
   useEffect(() => { fetchPorts(); }, [fetchPorts]);
 
-  // 定时自动刷新
+  // SSE 实时推送（替代轮询）
   useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    const secs = Number(auto);
-    if (secs > 0) {
-      timerRef.current = setInterval(() => fetchPorts({ silent: true }), secs * 1000);
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [auto, fetchPorts]);
+    if (auto === '0') return;
+    let es = null;
+    try {
+      es = new EventSource('/api/ports/events?interval=' + auto);
+      es.onmessage = (ev) => {
+        try {
+          const d = JSON.parse(ev.data);
+          if (d && d.ports) {
+            setPorts(d.ports);
+            setNotes(d.notes || {});
+            setServer(d.server || null);
+            setLastUpdated(new Date());
+            setLoading(false);
+            setRefreshing(false);
+            setSseDown(false);
+          }
+        } catch (e) { /* 忽略坏帧 */ }
+      };
+      es.onerror = () => { setSseDown(true); };
+    } catch (e) { setSseDown(true); }
+    return () => { if (es) es.close(); };
+  }, [auto]);
+
+  // SSE 断开时的降级轮询
+  useEffect(() => {
+    if (auto === '0' || !sseDown) return;
+    const id = setInterval(() => fetchPorts({ silent: true }), 5000);
+    return () => clearInterval(id);
+  }, [auto, sseDown, fetchPorts]);
+
+  // 数据变化后清理失效的勾选
+  useEffect(() => {
+    const occ = new Set(ports.filter(p => p.occupied).map(p => p.port));
+    setSelected(prev => new Set([...prev].filter(p => occ.has(p))));
+  }, [ports]);
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -336,7 +425,10 @@ function App() {
       const res = await fetch('/api/kill/' + port, { method: 'POST' });
       const data = await res.json().catch(() => null);
       if (res.ok) {
-        showToast('success', t('toastReleased', { port }));
+        const cnt = (data && data.killedCount) || 1;
+        showToast('success', lang === 'zh'
+          ? ((data && data.message) || t('toastReleased', { port }))
+          : t('toastReleased', { port }) + (cnt > 1 ? ` (${cnt} processes)` : ''));
       } else {
         const errText = (data && data.error) || t('toastKillFail', { port });
         if (lang === 'en') {
@@ -360,8 +452,104 @@ function App() {
     }
   }
 
-  const occupied = ports.filter(p => p.occupied).length;
+  // 批量终止
+  async function runKillAll(list) {
+    setBusyAll(true);
+    try {
+      const res = await fetch('/api/kill-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ports: list }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error((data && data.error) || 'HTTP ' + res.status);
+      const n = data.stopped || 0;
+      const f = data.failed || 0;
+      if (f === 0) showToast('success', t('toastStopped', { n }));
+      else showToast('error', t('toastStopPart', { n, f }));
+      setSelected(new Set());
+      fetchPorts();
+    } catch (err) {
+      showToast('error', t('toastOpFail', { msg: err.message }));
+    } finally {
+      setBusyAll(false);
+    }
+  }
+
+  async function handleStopSelected() {
+    const list = [...selected];
+    if (!list.length) return;
+    if (!window.confirm(t('stopSelConfirm', { n: list.length }))) return;
+    await runKillAll(list);
+  }
+
+  async function handleStopAll() {
+    const occ = ports.filter(p => p.occupied).map(p => p.port);
+    if (!occ.length) return;
+    if (!window.confirm(t('stopAllConfirm', { n: occ.length }))) return;
+    await runKillAll(occ);
+  }
+
+  // 端口备注
+  function startEdit(port) { setEditingPort(port); setNoteDraft(notes[String(port)] || ''); }
+  function cancelEdit() { setEditingPort(null); setNoteDraft(''); }
+  async function saveNote(port) {
+    if (editingPort !== port) return;
+    const note = noteDraft.trim().slice(0, 50);
+    cancelEdit();
+    if (note === (notes[String(port)] || '')) return; // 无变化
+    try {
+      const res = await fetch(`/api/ports/${port}/note`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error((data && data.error) || 'HTTP ' + res.status);
+      showToast('success', t('toastNoteSaved'));
+      fetchPorts();
+    } catch (err) {
+      showToast('error', t('toastNoteFail', { msg: err.message }));
+    }
+  }
+  async function clearNote(port) {
+    try {
+      const res = await fetch(`/api/ports/${port}/note`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: '' }),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      showToast('success', t('toastNoteSaved'));
+      fetchPorts();
+    } catch (err) {
+      showToast('error', t('toastNoteFail', { msg: err.message }));
+    }
+  }
+
+  // 勾选
+  const occPorts = ports.filter(p => p.occupied).map(p => p.port);
+  const allSel = occPorts.length > 0 && occPorts.every(p => selected.has(p));
+  function toggleSel(port) {
+    setSelected(prev => {
+      const s = new Set(prev);
+      if (s.has(port)) s.delete(port); else s.add(port);
+      return s;
+    });
+  }
+  function toggleAllSel() {
+    setSelected(allSel ? new Set() : new Set(occPorts));
+  }
+
+  function kindLabel(kind) {
+    if (kind === 'system') return t('labelKindSystem');
+    if (kind === 'unknown') return t('labelKindUnknown');
+    return kind;
+  }
+
+  const occupied = occPorts.length;
   const free = ports.length - occupied;
+  const busyAny = busyAll || busyPort !== null;
 
   return (
     <div className="wrap">
@@ -375,6 +563,7 @@ function App() {
                 ? <span className="mono">localhost:{server.port} · PID {server.pid}</span>
                 : t('subFallback')}
               {lastUpdated && <span className="updated">{t('subUpdated', { time: lastUpdated.toLocaleTimeString() })}</span>}
+              {sseDown && auto !== '0' && <span className="sse-fallback">⚠ {t('sseFallback')}</span>}
             </p>
           </div>
         </div>
@@ -402,6 +591,16 @@ function App() {
             <option value="10">{t('opt10')}</option>
           </select>
         </label>
+        <button
+          className="btn danger"
+          disabled={!selected.size || busyAny}
+          onClick={handleStopSelected}
+        >{t('btnStopSel', { n: selected.size })}</button>
+        <button
+          className="btn danger"
+          disabled={!occupied || busyAny}
+          onClick={handleStopAll}
+        >{t('btnStopAll')}</button>
         <form className="add" onSubmit={handleAdd}>
           <input
             value={newPort}
@@ -421,12 +620,16 @@ function App() {
         <table className="ptable">
           <thead>
             <tr>
-              <th>{t('thPort')}</th><th>{t('thStatus')}</th><th>{t('thProcess')}</th><th>{t('thAction')}</th>
+              <th className="chk"><input type="checkbox" checked={allSel} onChange={toggleAllSel} title={t('chkAllTitle')} /></th>
+              <th>{t('thPort')}</th><th>{t('thStatus')}</th><th>{t('thProcess')}</th><th>{t('thNote')}</th><th>{t('thAction')}</th>
             </tr>
           </thead>
           <tbody>
             {ports.map(p => (
               <tr key={p.port}>
+                <td className="chk">
+                  <input type="checkbox" disabled={!p.occupied} checked={selected.has(p.port)} onChange={() => toggleSel(p.port)} />
+                </td>
                 <td className="port mono">{p.port}</td>
                 <td>
                   {p.occupied
@@ -438,6 +641,7 @@ function App() {
                     p.pids.map(pr => (
                       <div className="proc-item" key={pr.pid}
                            title={pr.cmdline ? t('cmdlineTitle', { cmd: pr.cmdline }) : undefined}>
+                        <span className={'chip k-' + (pr.kind || 'unknown')}>{kindLabel(pr.kind)}</span>
                         <span className="mono">{pr.name}</span>
                         <span className="pid mono">PID {pr.pid}</span>
                         {pr.cmdline && <span className="cmdline mono">{pr.cmdline}</span>}
@@ -445,10 +649,36 @@ function App() {
                     ))
                   ) : <span className="muted">—</span>}
                 </td>
+                <td className="note-cell">
+                  {editingPort === p.port ? (
+                    <input
+                      className="note-input"
+                      value={noteDraft}
+                      autoFocus
+                      maxLength={50}
+                      placeholder={t('notePlaceholder')}
+                      onChange={e => setNoteDraft(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveNote(p.port); if (e.key === 'Escape') cancelEdit(); }}
+                      onBlur={() => saveNote(p.port)}
+                    />
+                  ) : (
+                    <span className={'note' + (notes[String(p.port)] ? ' has' : '')}
+                          onClick={() => startEdit(p.port)} title={t('noteEdit')}>
+                      {notes[String(p.port)] ? (
+                        <React.Fragment>
+                          <span className="note-text">{notes[String(p.port)]}</span>
+                          <button className="note-clear" title={t('noteRemove')}
+                                  onClick={e => { e.stopPropagation(); clearNote(p.port); }}>✕</button>
+                        </React.Fragment>
+                      ) : <span className="note-empty">+ {t('notePlaceholder')}</span>}
+                    </span>
+                  )}
+                </td>
                 <td className="ops">
                   <button
                     className="btn small danger"
-                    disabled={!p.occupied || busyPort === p.port}
+                    disabled={!p.occupied || busyAny}
+                    title={p.occupied ? t('btnStopTitle') : undefined}
                     onClick={() => handleKill(p.port)}
                   >{busyPort === p.port ? t('btnStopping') : t('btnStop')}</button>
                   <button
